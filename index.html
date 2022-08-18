@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+    <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+    <link rel="stylesheet" href="base.css">
+  </head>
+  
+  <body>
+    <div class="container">
+      <h class="title">最強の三目並べAI</h>
+      <div class="grid">
+        <div class="cell">
+          <span id="pos-0-x" class="batu hidden">X</span>
+          <span id="pos-0-o" class="maru hidden">O</span>
+          <button id="pos-0-button" pys-onclick="lambda e: cell_click(0)"></button>
+        </div>
+        <div class="cell">
+          <span id="pos-1-x" class="batu hidden">X</span>
+          <span id="pos-1-o" class="maru hidden">O</span>
+          <button id="pos-1-button" pys-onclick="lambda e: cell_click(1)"></button>
+        </div>
+        <div class="cell">
+          <span id="pos-2-x" class="batu hidden">X</span>
+          <span id="pos-2-o" class="maru hidden">O</span>
+          <button id="pos-2-button" pys-onclick="lambda e: cell_click(2)"></button>
+        </div>
+        <div class="cell">
+          <span id="pos-3-x" class="batu hidden">X</span>
+          <span id="pos-3-o" class="maru hidden">O</span>
+          <button id="pos-3-button" pys-onclick="lambda e: cell_click(3)"></button>
+        </div>
+        <div class="cell">
+          <span id="pos-4-x" class="batu hidden">X</span>
+          <span id="pos-4-o" class="maru hidden">O</span>
+          <button id="pos-4-button" pys-onclick="lambda e: cell_click(4)"></button>
+        </div>
+        <div class="cell">
+          <span id="pos-5-x" class="batu hidden">X</span>
+          <span id="pos-5-o" class="maru hidden">O</span>
+          <button id="pos-5-button" pys-onclick="lambda e: cell_click(5)"></button>
+        </div>
+        <div class="cell">
+          <span id="pos-6-x" class="batu hidden">X</span>
+          <span id="pos-6-o" class="maru hidden">O</span>
+          <button id="pos-6-button" pys-onclick="lambda e: cell_click(6)"></button>
+        </div>
+        <div class="cell">
+          <span id="pos-7-x" class="batu hidden">X</span>
+          <span id="pos-7-o" class="maru hidden">O</span>
+          <button id="pos-7-button" pys-onclick="lambda e: cell_click(7)"></button>
+        </div>
+        <div class="cell">
+          <span id="pos-8-x" class="batu hidden">X</span>
+          <span id="pos-8-o" class="maru hidden">O</span>
+          <button id="pos-8-button"  pys-onclick="lambda e: cell_click(8)"></button>
+        </div>
+      </div>
+      
+      <h3 id="message"></h3>
+      <button id="reset-button" class="hidden" pys-onclick="lambda e: reset()">もう一度</button>
+    </div>
+    
+<py-script>
+MARKS = {0: 'X', 1: 'O'}
+
+def update_cells(state):
+    for i, value in enumerate(state):
+        Element(f"pos-{i}-x").add_class("hidden")
+        Element(f"pos-{i}-o").add_class("hidden")
+        if value == 0:
+            Element(f"pos-{i}-x").remove_class("hidden")
+        elif value == 1:
+            Element(f"pos-{i}-o").remove_class("hidden")
+
+def display_message(value):
+    Element("message").write(value)
+
+
+class Board:
+    def __init__(self):
+        self.state = [None] * 9
+        self.counter = 0
+
+    def render(self):
+        text = """
+0|1|2
+-----
+3|4|5
+-----
+6|7|8
+"""
+        for idx, x in enumerate(self.state):
+            if x is not None:
+                text = text.replace(str(idx), MARKS[x])  # 4 -> X
+        print(text)
+
+    def move(self, idx):
+        if self.state[idx] is not None:
+            return False
+
+        player = self.counter % 2
+        self.state[idx] = player
+        self.counter += 1
+        return True
+
+    def unmove(self, idx):
+        self.counter -= 1
+        self.state[idx] = None
+    
+    def is_win(self, player):
+        s = self.state
+        if(
+            s[0] == s[1] == s[2] == player or
+            s[3] == s[4] == s[5] == player or
+            s[6] == s[7] == s[8] == player or
+            s[0] == s[3] == s[6] == player or
+            s[1] == s[4] == s[7] == player or
+            s[2] == s[5] == s[8] == player or
+            s[0] == s[4] == s[8] == player or
+            s[2] == s[4] == s[6] == player
+        ):
+            return True
+        return False
+
+    def is_end(self):
+        if None in self.state:
+            return False
+        return True
+
+    def valid_moves(self):
+        moves = []
+        for idx, player in enumerate(self.state):
+            if player is None:
+                moves.append(idx)
+        return moves
+
+
+def minimax(board, player):
+    maximize_player = 0
+    minimize_player = 1
+
+    if board.is_win(maximize_player):
+        return (1, None)
+    elif board.is_win(minimize_player):
+        return (-1, None)
+    elif board.is_end():
+        return (0, None)
+
+    opp = 1 if player == 0 else 0
+
+    if player == maximize_player:
+        max_score = -float('inf')
+        max_idx = None
+
+        for idx in board.valid_moves():
+            board.move(idx)
+            score, next_idx = minimax(board, opp)
+            if max_score < score:
+                max_score = score
+                max_idx = idx
+            board.unmove(idx)
+        
+        return (max_score, max_idx)
+    else:
+        min_score = float('inf')
+        min_idx = None
+
+        for idx in board.valid_moves():
+            board.move(idx)
+            score, next_idx = minimax(board, opp)
+            if min_score > score:
+                min_score = score
+                min_idx = idx
+            board.unmove(idx)
+        
+        return (min_score, min_idx)
+        
+        
+class BestPlayer:
+    def __init__(self, player):
+        self.player = player
+    
+    def play(self, board):
+        score, idx = minimax(board, self.player)
+        board.move(idx)
+        return idx
+
+
+class GameManager:
+    def __init__(self):
+        self.board = None
+        self.best_player = BestPlayer(1)
+        self.game_running = False
+        self.start()
+
+    def start(self):
+        self.board = Board()
+        self.game_running = True
+        display_message('あなたの番です')
+        update_cells(self.board.state)
+        Element("reset-button").add_class("hidden")
+
+    def stop(self):
+        self.game_running = False
+
+    def resume(self):
+        self.game_running = True
+
+    def human_play(self, idx):
+        if not self.game_running:
+            return
+
+        self.board.move(idx)
+        update_cells(self.board.state)
+
+        if self.board.is_win(0):
+            display_message("あなたの勝ち🎉")
+            self.game_running = False
+            Element("reset-button").remove_class("hidden")
+            return 
+        elif self.board.is_end():
+            display_message("引き分け")
+            self.game_running = False
+            Element("reset-button").remove_class("hidden")
+            return
+
+        # AI Turn
+        display_message("AIの番（考え中...)")
+        ai_idx = self.best_player.play(self.board)
+        update_cells(self.board.state)
+
+        if self.board.is_win(1):
+            display_message("AIの勝ち😞")
+            self.game_running = False
+            Element("reset-button").remove_class("hidden")  
+            return 
+
+        display_message("あなたの番です")
+
+
+game_manager = GameManager()
+
+def reset():
+    game_manager.start()
+  
+def cell_click(idx):
+    game_manager.human_play(idx)
+
+</py-script>
+  </body>
+</html>
